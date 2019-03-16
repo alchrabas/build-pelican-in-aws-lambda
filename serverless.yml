@@ -1,0 +1,31 @@
+service: build-pelican-in-lambda
+
+plugins:
+  - serverless-python-requirements
+custom:
+  stage: "${opt:stage, env:SLS_STAGE, 'dev'}"
+  log_level: "${env:LOG_LEVEL, 'INFO'}"
+
+  pythonRequirements:
+    dockerizePip: false
+
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${self:custom.stage}
+  environment:
+    LOG_LEVEL: ${self:custom.log_level}
+  stackTags:
+    x-service: build-pelican-in-lambda
+    x-stack: ${self:service}-${self:provider.stage}
+  region: eu-central-1
+
+
+functions:
+  Action:
+    handler: handlers/action.handler
+    description: "Does something with git"
+    memorySize: 128
+    timeout: 28
+
