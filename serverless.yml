@@ -8,6 +8,8 @@ custom:
 
   pythonRequirements:
     dockerizePip: false
+  bucket_name: "chrabasz.cz"
+  git_repo: https://github.com/alchrabas/blog.git
 
 
 provider:
@@ -38,9 +40,14 @@ functions:
     description: "Rebuilds pelican blog from contents stored in git"
     memorySize: 512
     timeout: 600
+    environment:
+      BUCKET_NAME: ${self:custom.bucket_name}
+      URL_TO_GIT_REPO_HTTPS: ${self:custom.git_repo}
   rebuild_blog_from_git:
     handler: handlers/action.http_rebuild_blog
     description: "Makes async call to async_rebuild_blog_from_git lambda"
+    environment:
+      LAMBDA_REBUILD_ASYNC: build-pelican-in-lambda-${self:custom.stage}-async_rebuild_blog_from_git
     events:
     - http:
         path: rebuild
@@ -52,4 +59,4 @@ resources:
     BlogBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: "chrabasz.cz"
+        BucketName: ${self:custom.bucket_name}
