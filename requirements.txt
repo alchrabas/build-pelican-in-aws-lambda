@@ -2,3 +2,5 @@
 # testing tools happy.
 boto3
 lambda-git
+pelican
+Markdown

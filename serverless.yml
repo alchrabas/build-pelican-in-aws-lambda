@@ -1,7 +1,7 @@
 service: build-pelican-in-lambda
 
 plugins:
-  - serverless-python-requirements
+- serverless-python-requirements
 custom:
   stage: "${opt:stage, env:SLS_STAGE, 'dev'}"
   log_level: "${env:LOG_LEVEL, 'INFO'}"
@@ -20,12 +20,36 @@ provider:
     x-service: build-pelican-in-lambda
     x-stack: ${self:service}-${self:provider.stage}
   region: eu-central-1
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+    - lambda:InvokeFunction
+    Resource: "*"
+  - Effect: Allow
+    Action:
+    - "s3:PutObject"
+    Resource:
+      Fn::Join: ['', [Fn::GetAtt: [ BlogBucket, Arn ], '/*'] ]
 
 
 functions:
-  Action:
-    handler: handlers/action.handler
-    description: "Does something with git"
-    memorySize: 128
-    timeout: 28
+  async_rebuild_blog_from_git:
+    handler: handlers/action.async_handler
+    description: "Rebuilds pelican blog from contents stored in git"
+    memorySize: 512
+    timeout: 600
+  rebuild_blog_from_git:
+    handler: handlers/action.http_rebuild_blog
+    description: "Makes async call to async_rebuild_blog_from_git lambda"
+    events:
+    - http:
+        path: rebuild
+        method: get
 
+
+resources:
+  Resources:
+    BlogBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "chrabasz.cz"
