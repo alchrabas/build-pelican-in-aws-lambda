@@ -1,5 +1,6 @@
 import json
 import logging
+import mimetypes
 import os
 import shutil
 
@@ -23,6 +24,12 @@ s3 = boto3.client('s3')
 def http_rebuild_blog(event, context):
     client.invoke(FunctionName=os.environ["LAMBDA_REBUILD_ASYNC"],
                   InvocationType='Event')
+
+    return {
+        "statusCode": 200,
+        "headers": {},
+        "body": "Rebuild task started",
+    }
 
 
 def async_handler(event, context):
@@ -52,7 +59,10 @@ def upload_recursively(path, bucket_name):
         for filename in files:
             local_path = os.path.join(root, filename)
             relative_path = os.path.relpath(local_path, path)
-            s3.upload_file(local_path, bucket_name, relative_path)
+            s3.upload_file(local_path, bucket_name, relative_path,
+                           ExtraArgs={
+                               "ContentType": mimetypes.guess_type(filename)[0]
+                           })
 
 
 if __name__ == "__main__":

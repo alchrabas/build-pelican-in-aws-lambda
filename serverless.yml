@@ -1,7 +1,7 @@
 service: build-pelican-in-lambda
 
 plugins:
-- serverless-python-requirements
+  - serverless-python-requirements
 custom:
   stage: "${opt:stage, env:SLS_STAGE, 'dev'}"
   log_level: "${env:LOG_LEVEL, 'INFO'}"
@@ -23,15 +23,15 @@ provider:
     x-stack: ${self:service}-${self:provider.stage}
   region: eu-central-1
   iamRoleStatements:
-  - Effect: Allow
-    Action:
-    - lambda:InvokeFunction
-    Resource: "*"
-  - Effect: Allow
-    Action:
-    - "s3:PutObject"
-    Resource:
-      Fn::Join: ['', [Fn::GetAtt: [ BlogBucket, Arn ], '/*'] ]
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - "s3:PutObject"
+      Resource:
+        Fn::Join: ['', [Fn::GetAtt: [ BlogBucket, Arn ], '/*'] ]
 
 
 functions:
@@ -46,12 +46,14 @@ functions:
   rebuild_blog_from_git:
     handler: handlers/action.http_rebuild_blog
     description: "Makes async call to async_rebuild_blog_from_git lambda"
+    memorySize: 128
+    timeout: 3
     environment:
       LAMBDA_REBUILD_ASYNC: build-pelican-in-lambda-${self:custom.stage}-async_rebuild_blog_from_git
     events:
-    - http:
-        path: rebuild
-        method: get
+      - http:
+          path: rebuild
+          method: get
 
 
 resources:
@@ -60,3 +62,28 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.bucket_name}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+    BlogBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: BlogBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+                - s3:GetObject
+              Resource:
+                Fn::Join: [
+                  "", [
+                  "arn:aws:s3:::",
+                  {
+                    "Ref": "BlogBucket"
+                  },
+                  "/*"
+                ]
+                ]
