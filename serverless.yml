@@ -5,11 +5,13 @@ plugins:
 custom:
   stage: "${opt:stage, env:SLS_STAGE, 'dev'}"
   log_level: "${env:LOG_LEVEL, 'INFO'}"
-
   pythonRequirements:
     dockerizePip: false
-  bucket_name: "chrabasz.cz"
+  site_name: "chrabasz.cz"
   git_repo: https://github.com/alchrabas/blog.git
+  git_repo_theme: https://github.com/alchrabas/crowsfoot.git
+  theme_name: crowsfoot
+  acm_certificate_arn: "arn:aws:acm:us-east-1:743153929666:certificate/92ba3644-466a-4cf9-beea-ab97466fe960"
 
 
 provider:
@@ -41,8 +43,10 @@ functions:
     memorySize: 512
     timeout: 600
     environment:
-      BUCKET_NAME: ${self:custom.bucket_name}
+      BUCKET_NAME: ${self:custom.site_name}
       URL_TO_GIT_REPO_HTTPS: ${self:custom.git_repo}
+      URL_TO_GIT_REPO_THEME_HTTPS: ${self:custom.git_repo_theme}
+      THEME_NAME: ${self:custom.theme_name}
   rebuild_blog_from_git:
     handler: handlers/action.http_rebuild_blog
     description: "Makes async call to async_rebuild_blog_from_git lambda"
@@ -61,10 +65,8 @@ resources:
     BlogBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:custom.bucket_name}
+        BucketName: ${self:custom.site_name}
         AccessControl: PublicRead
-        WebsiteConfiguration:
-          IndexDocument: index.html
     BlogBucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:
@@ -87,3 +89,29 @@ resources:
                   "/*"
                 ]
                 ]
+    DnsRecord:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        AliasTarget:
+          DNSName: "s3-website.eu-central-1.amazonaws.com"
+          HostedZoneId: Z21DNDUVLTQW6Q
+        HostedZoneName: ${self:custom.site_name}.
+        Name:
+          Ref: BlogBucket
+        Type: 'A'
+    DnsRecordWww:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        AliasTarget:
+          DNSName: "s3-website.eu-central-1.amazonaws.com"
+          HostedZoneId: Z21DNDUVLTQW6Q
+        HostedZoneName: ${self:custom.site_name}.
+        Name:
+          Fn::Join: [
+            "", [
+            "www.",
+            {
+              "Ref": "BlogBucket"
+            },
+          ]]
+        Type: 'A'

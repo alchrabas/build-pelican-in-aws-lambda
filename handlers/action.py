@@ -42,16 +42,19 @@ def async_handler(event, context):
 def build_blog_from_git(main_dir, blog_dir):
     if os.path.isdir(blog_dir):
         shutil.rmtree(blog_dir)  # just fetch from the repo (including submodule dependencies)
-    stdout, stderr = git.exec_command('clone', '--recurse-submodules',
-                                      os.environ["URL_TO_GIT_REPO_HTTPS"], blog_dir, cwd=main_dir)
+    stdout, stderr = git.exec_command('clone', os.environ["URL_TO_GIT_REPO_HTTPS"], blog_dir, cwd=main_dir)
+    _logger.info('Git stdout: {}, stderr: {}'.format(stdout.decode("utf-8"), stderr.decode("utf-8")))
     os.chdir(blog_dir)
-    settings = read_settings("pelicanconf.py")
+
+    stdout, stderr = git.exec_command('clone', os.environ["URL_TO_GIT_REPO_THEME_HTTPS"],
+                                      blog_dir + "/" + os.environ["THEME_NAME"], cwd=blog_dir)
+    _logger.info('Git theme stdout: {}, stderr: {}'.format(stdout.decode("utf-8"), stderr.decode("utf-8")))
+
+    settings = read_settings("publishconf.py")
     pelican = Pelican(settings)
     pelican.run()
 
     upload_recursively(blog_dir + "/output", os.environ["BUCKET_NAME"])
-
-    _logger.info('Git stdout: {}, stderr: {}'.format(stdout.decode("utf-8"), stderr.decode("utf-8")))
 
 
 def upload_recursively(path, bucket_name):
@@ -61,7 +64,7 @@ def upload_recursively(path, bucket_name):
             relative_path = os.path.relpath(local_path, path)
             s3.upload_file(local_path, bucket_name, relative_path,
                            ExtraArgs={
-                               "ContentType": mimetypes.guess_type(filename)[0]
+                               "ContentType": mimetypes.guess_type(filename, strict=False)[0] or "text/plain"
                            })
 
 
