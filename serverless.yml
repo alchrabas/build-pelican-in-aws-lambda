@@ -7,7 +7,7 @@ custom:
   log_level: "${env:LOG_LEVEL, 'INFO'}"
   pythonRequirements:
     dockerizePip: false
-  site_name: "chrabasz.cz"
+  site_name: chrabasz.cz
   git_repo: https://github.com/alchrabas/blog.git
   git_repo_theme: https://github.com/alchrabas/crowsfoot.git
   theme_name: crowsfoot
@@ -89,12 +89,41 @@ resources:
                   "/*"
                 ]
                 ]
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Comment: CloudFront Distribution for a static blog in S3
+          DefaultCacheBehavior:
+            TargetOriginId: BlogOrigin
+            AllowedMethods:
+              - GET
+              - HEAD
+            ViewerProtocolPolicy: 'redirect-to-https'
+            DefaultTTL: 30
+            MaxTTL: 60
+            ForwardedValues:
+              QueryString: false
+          ViewerCertificate:
+            AcmCertificateArn: ${self:custom.acm_certificate_arn}
+            SslSupportMethod: sni-only
+          Enabled: true
+          Aliases:
+            - ${self:custom.site_name}
+          DefaultRootObject: index.html
+          Origins:
+            - Id: BlogOrigin
+              DomainName: ${self:custom.site_name}.s3.amazonaws.com
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: http-only
     DnsRecord:
       Type: "AWS::Route53::RecordSet"
       Properties:
         AliasTarget:
-          DNSName: "s3-website.eu-central-1.amazonaws.com"
-          HostedZoneId: Z21DNDUVLTQW6Q
+          DNSName: {Fn::GetAtt: [ CloudFrontDistribution, DomainName ]}
+          HostedZoneId: Z2FDTNDATAQYW2
         HostedZoneName: ${self:custom.site_name}.
         Name:
           Ref: BlogBucket
@@ -103,8 +132,8 @@ resources:
       Type: "AWS::Route53::RecordSet"
       Properties:
         AliasTarget:
-          DNSName: "s3-website.eu-central-1.amazonaws.com"
-          HostedZoneId: Z21DNDUVLTQW6Q
+          DNSName: {Fn::GetAtt: [ CloudFrontDistribution, DomainName ]}
+          HostedZoneId: Z2FDTNDATAQYW2
         HostedZoneName: ${self:custom.site_name}.
         Name:
           Fn::Join: [

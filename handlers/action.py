@@ -28,7 +28,7 @@ def http_rebuild_blog(event, context):
     return {
         "statusCode": 200,
         "headers": {},
-        "body": "Rebuild task started",
+        "body": '{"response": "Rebuild task started"}',
     }
 
 
