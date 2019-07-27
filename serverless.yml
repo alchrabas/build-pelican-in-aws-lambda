@@ -58,6 +58,9 @@ functions:
       - http:
           path: rebuild
           method: get
+      - http:
+          path: rebuild
+          method: post
 
 
 resources:
