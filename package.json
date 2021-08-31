@@ -2,9 +2,11 @@
   "name": "build-pelican-in-lambda",
   "description": "",
   "version": "0.0.1",
-  "dependencies": {},
+  "dependencies": {
+    "serverless": "^1.48.2"
+  },
   "devDependencies": {
-    "serverless-python-requirements": "^4.3.0"
+    "serverless-python-requirements": "^5.1.1"
   },
   "scripts": {
     "setup": "pyenv virtualenv 3.6 $(basename $(pwd)) && pyenv local $(basename $(pwd)) && pip install -r requirements.txt -r requirements-dev.txt"

@@ -6,7 +6,7 @@ custom:
   stage: "${opt:stage, env:SLS_STAGE, 'dev'}"
   log_level: "${env:LOG_LEVEL, 'INFO'}"
   pythonRequirements:
-    dockerizePip: false
+    dockerizePip: true
   site_name: chrabasz.cz
   git_repo: https://github.com/alchrabas/blog.git
   git_repo_theme: https://github.com/alchrabas/crowsfoot.git
@@ -147,3 +147,8 @@ resources:
             },
           ]]
         Type: 'A'
+
+package:
+  exclude:
+    - node_modules/**
+    - .venv/**
